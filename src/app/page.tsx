@@ -3,11 +3,29 @@
 import { useEffect, useState } from "react";
 import LastMatch from "../components/LastMatch";
 
+export interface MatchData{
+  metadata: {
+    participants: string[];
+  };
+  info: {
+    gameDuration: number
+    participants: {
+      win: boolean;
+      championName: string;
+    }[];
+  };
+}
+
+export interface PlayerData{
+  puuid : string,
+  gameName: string,
+  tagLine: string,
+}
+
 export default function Home() {
 
-  const [player, setPlayer] = useState<any>(null);
-  const [matches, setMatches] = useState<any>(null);
-  const [currentMatch, setCurrentMatch] = useState<any>(null);
+  const [player, setPlayer] = useState<PlayerData | null>(null);
+  const [matches, setMatches] = useState<Record<number, string> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -38,17 +56,7 @@ export default function Home() {
         if (!res2.ok){
           throw new Error(data.error || "Failed to load match IDs");
         }
-        setMatches(data2);
-
-        const res3 = await fetch(
-          `api/matches?matchId=${encodeURIComponent(data2[0])}`
-        );
-        const data3 = await res3.json();
-        if (!res3.ok){
-          throw new Error(data.error || "Failed to load match data");
-        }
-
-       setCurrentMatch(data3);
+        setMatches(data2); 
 
       }catch(err: any){
         setError(err.message);
@@ -60,27 +68,14 @@ export default function Home() {
     
   },[]);
 
-const matchResult = () => {
-    let participantID = 10;
-    for (let i=0; i<10; i++){
-      if(currentMatch.metadata.participants[i] == player.puuid){
-        participantID = i;
-      }
-    }
-    let gameWon = currentMatch.info.participants[participantID].win;
-    console.log(gameWon);
-
-    if(gameWon){
-      return "Won!"
-    }else{
-      return "Lost :("
-    }
+  const recentMatches = () => {
+    return matches ? Object.values(matches).slice(0,5) : [];
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 flex items-center justify-center p-6">
       <section className="w-full max-w-md bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-700 p-8 shadow-xl">
-      <h1>Awale's Last game:</h1>
+      <h1>Awale's 5 Last games:</h1>
         {loading && <p className="text-gray-500">Loading player data...</p>}
         {error && (
           <p className="text-red-600 bg-red-50 border border-red-200 px-4 py-2 rounded">
@@ -88,24 +83,14 @@ const matchResult = () => {
           </p>
         )}
         
-        {player && matches &&  currentMatch && (
-          <div className="bg-blue-100 p-6 rounded-2xl shadow-md mt-4 max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-2 text-blue-800">
-              {player.gameName}#{player.tagLine}
-            </h2>
-            <LastMatch 
-            matchStatus={matchResult()}
-            champion="Jinx"
-            length="34:12" />
-            <p className="text-red-700">
-              <strong>Last Match Won?</strong> {matchResult()}
-            </p>
-            {player.summonerId && (
-              <p className="text-blue-700">
-                <strong>Summoner ID:</strong> {player.summonerId}
-              </p>
-            )}
-        </div>
+        {player && matches && (
+          <ul>
+            <li> <LastMatch match={recentMatches()[0]} player={ player } /></li>
+            <li> <LastMatch match={recentMatches()[1]} player={ player } /></li>
+            <li> <LastMatch match={recentMatches()[2]} player={ player } /></li>
+            <li> <LastMatch match={recentMatches()[3]} player={ player } /></li>
+            <li> <LastMatch match={recentMatches()[4]} player={ player } /></li>
+          </ul>
         )}
       </section>
     </main>
